@@ -14,7 +14,7 @@ public class FilmDatabaseApp {
     private static String currentPassword;
     private static String currentDBUrl;
     private static String currentRole;
-    private static String currentTable = "film";
+    private static String currentTable = "film"; // по умолчанию
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(LoginFrame::new);
@@ -60,11 +60,17 @@ public class FilmDatabaseApp {
                 currentRole = adminButton.isSelected() ? "Admin" : "Guest";
                 currentUser = userField.getText().trim();
                 currentPassword = new String(passField.getPassword());
-                currentDBUrl = currentRole.equals("Admin") ? DB_URL_DEFAULT : DB_URL_FILMS;
+
+                if (currentRole.equals("Admin")) {
+                    currentDBUrl = DB_URL_FILMS;
+                } else {
+                    currentDBUrl = DB_URL_FILMS;
+                }
+
                 try (Connection conn = getConnection(currentDBUrl)) {
                     JOptionPane.showMessageDialog(
                             null,
-                            "Успешное подключение!",
+                            "Успешное подключение к " + currentDBUrl,
                             "Информация",
                             JOptionPane.INFORMATION_MESSAGE
                     );
@@ -139,23 +145,15 @@ public class FilmDatabaseApp {
                 SwingUtilities.invokeLater(LoginFrame::new);
             });
 
-            // кнопка "Сменить базу данных" (только для Admin)
+            // кнопка "Сменить базу данных" 
             btnSwitchDatabase.addActionListener(e -> {
-                String[] options = {"postgres", "films_db"};
-                String selectedDB = (String) JOptionPane.showInputDialog(
-                        null,
-                        "Выберите базу данных:",
-                        "Переключение базы данных",
-                        JOptionPane.QUESTION_MESSAGE,
-                        null,
-                        options,
-                        currentDBUrl.equals(DB_URL_DEFAULT) ? "postgres" : "films_db"
-                );
-                if (selectedDB != null) {
-                    currentDBUrl = selectedDB.equals("postgres") ? DB_URL_DEFAULT : DB_URL_FILMS;
-                    try (Connection conn = getConnection(currentDBUrl)) {
+                String dbName = JOptionPane.showInputDialog("Введите имя базы данных (без префикса jdbc):", "films_db");
+                if (dbName != null && !dbName.trim().isEmpty()) {
+                    String typedUrl = "jdbc:postgresql://localhost:5432/" + dbName.trim();
+                    try (Connection conn = getConnection(typedUrl)) {
+                        currentDBUrl = typedUrl;
                         JOptionPane.showMessageDialog(null,
-                                "Переключение базы данных успешно. Сейчас используется: " + selectedDB,
+                                "Переключение базы данных успешно. Сейчас используется: " + typedUrl,
                                 "Информация",
                                 JOptionPane.INFORMATION_MESSAGE);
                     } catch (SQLException ex) {
@@ -167,7 +165,7 @@ public class FilmDatabaseApp {
                 }
             });
 
-            // кнопка "Сменить таблицу" (только для Admin)
+            // кнопка "Сменить таблицу" 
             btnSwitchTable.addActionListener(e -> {
                 String newTable = JOptionPane.showInputDialog("Введите имя таблицы для работы:", currentTable);
                 if (newTable != null && !newTable.trim().isEmpty()) {
@@ -179,7 +177,7 @@ public class FilmDatabaseApp {
                 }
             });
 
-            // кнопка "Создать новую таблицу" (только для Admin)
+            // кнопка "Создать новую таблицу" 
             btnCreateTable.addActionListener(e -> {
                 String newTable = JOptionPane.showInputDialog("Введите имя новой таблицы:");
                 if (newTable != null && !newTable.trim().isEmpty()) {
